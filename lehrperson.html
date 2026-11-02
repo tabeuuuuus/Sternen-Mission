@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Sternen-Mission | Lehrpersonenbereich</title>
+<style>
+:root{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#eef5ff;background:#09152d;color-scheme:dark}
+*{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(ellipse at 20% 12%,#234579 0,transparent 44%),radial-gradient(ellipse at 95% 80%,#29245a 0,transparent 42%),#09152d}
+body:before{content:"";position:fixed;inset:0;pointer-events:none;opacity:.6;background-image:radial-gradient(#fff 1px,transparent 1px);background-size:53px 59px}
+main{position:relative;max-width:920px;margin:0 auto;padding:clamp(20px,5vw,56px) 20px}
+header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:28px}
+.brand{display:flex;align-items:center;gap:12px;font-weight:850;letter-spacing:.025em}.mark{width:44px;height:44px;display:grid;place-items:center;border-radius:15px;background:linear-gradient(135deg,#4ec9ec,#8672fd);box-shadow:0 6px 24px #4ec9ec44}
+.panel{border:1px solid #6383b155;background:#101e3bea;box-shadow:0 18px 65px #02081877;border-radius:24px;padding:clamp(22px,5vw,42px);backdrop-filter:blur(10px)}
+h1{font-size:clamp(27px,5vw,40px);margin:5px 0 12px}h2{font-size:20px}p{line-height:1.55;color:#bbcae5}label{font-size:14px;font-weight:700;display:block;margin:18px 0 7px}
+input{width:100%;font:inherit;border:1px solid #6884b477;background:#0a1630;color:white;border-radius:12px;padding:15px;outline-offset:3px}
+input:focus{outline:2px solid #70d4f4}button,.link{font:inherit;cursor:pointer;border:0;border-radius:12px;padding:13px 18px;font-weight:800;background:linear-gradient(120deg,#65d9f5,#a09bff);color:#09152d;text-decoration:none;display:inline-block}
+button:disabled{opacity:.6;cursor:wait}button.secondary,.link{background:#20355d;color:#dcecff;border:1px solid #617ba655}
+.actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:24px}
+.notice{background:#243653;border:1px solid #6b8cb155;padding:12px 15px;border-radius:10px;margin-top:18px;color:#dce9ff;line-height:1.45}
+.error{background:#5f2834;border-color:#e88897;color:#ffe5e8}
+.muted{font-size:13px;color:#a7bbd9}.hidden{display:none!important}
+.summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:12px;margin:22px 0}
+.metric{background:#192e50;border:1px solid #5675a050;border-radius:15px;padding:18px}.metric strong{display:block;font-size:27px;margin-top:9px}
+table{width:100%;border-collapse:collapse;margin:18px 0}th,td{padding:13px;text-align:left;border-bottom:1px solid #5675a055}th{color:#bbcae5;font-size:13px}
+a{color:#96e0f8}footer{margin-top:30px;font-size:13px;color:#a7bbd9}
+@media(max-width:540px){.panel{padding:20px}td,th{padding:10px 4px}.brand span:last-child{font-size:14px}}
+</style></head><body><main>
+<header><div class="brand"><div class="mark" aria-hidden="true">✦</div><span>STERNEN-MISSION<br><small style="font-weight:500;color:#b9cae8">Lehrpersonenbereich</small></span></div><a class="link" href="./index.html">Zum Spiel</a></header>
+<section id="login" class="panel"><div class="muted">GESCHÜTZTER ZUGANG</div><h1>Willkommen zurück</h1><p>Melde dich mit deinem Lehrpersonen-Konto an. Der Zugang zu Schülerdaten wird zusätzlich von der Datenbank überprüft.</p>
+<form id="loginForm"><label for="email">E-Mail-Adresse</label><input id="email" type="email" autocomplete="username" required placeholder="deine@email.ch">
+<label for="password">Passwort</label><input id="password" type="password" autocomplete="current-password" required>
+<div class="actions"><button id="signIn" type="submit">Anmelden</button></div></form>
+<div id="loginMessage" class="notice hidden" role="status"></div></section>
+<section id="dashboard" class="panel hidden"><div class="muted">DEIN DASHBOARD</div><h1>Missionen im Überblick</h1><p id="signedInAs"></p>
+<div class="summary"><div class="metric">Schülerprofile<strong id="studentCount">–</strong></div><div class="metric">Erfasste Antworten<strong id="answerCount">–</strong></div><div class="metric">Ø Trefferquote<strong id="accuracy">–</strong></div></div>
+<h2>Deine Schülerprofile</h2><div style="overflow-x:auto"><table><thead><tr><th>Profil</th><th>Aktuelles Level</th><th>Rechnungen</th></tr></thead><tbody id="studentRows"></tbody></table></div>
+<p id="empty" class="muted hidden">Noch keine Schülerprofile vorhanden. Wir richten die persönlichen Kinder-Codes im nächsten Schritt ein.</p>
+<div id="dashboardMessage" class="notice hidden" role="status"></div>
+<div class="actions"><button id="refresh" type="button" class="secondary">Aktualisieren</button><button id="signOut" type="button" class="secondary">Abmelden</button></div></section>
+<footer>Testversion · Keine echten Schülerdaten verwenden, bevor die schulische Datenschutzfreigabe und die Zugriffstests abgeschlossen sind.</footer>
+</main>
+<script type="module">
+import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
+const supabase = createClient("https://usejitkmxcjpfusmloil.supabase.co","sb_publishable_kjXScgpazASX508ovdW5KQ_mQ5Rjgb7", {auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false}});
+const $=id=>document.getElementById(id);
+const show=(id,on)=>$(id).classList.toggle("hidden",!on);
+function message(id,text,error=false){$(id).textContent=text;$(id).classList.toggle("error",error);show(id,!!text)}
+async function enter(session){
+ if(!session?.user){show("login",true);show("dashboard",false);return}
+ const {data:teacher,error}=await supabase.from("sm_teachers").select("user_id").eq("user_id",session.user.id).maybeSingle();
+ if(error){message("loginMessage","Berechtigung konnte nicht geprüft werden: "+error.message,true);return}
+ if(!teacher){await supabase.auth.signOut();show("login",true);show("dashboard",false);message("loginMessage","Dieses Konto hat keine Lehrpersonenberechtigung.",true);return}
+ show("login",false);show("dashboard",true);$("signedInAs").textContent="Angemeldet als "+(session.user.email||"Lehrperson");
+ await loadData();
+}
+async function loadData(){
+ message("dashboardMessage","");$("studentRows").replaceChildren();
+ const {data:students,error}=await supabase.from("sm_students").select("id,nickname").order("nickname");
+ if(error){message("dashboardMessage","Schülerprofile konnten nicht geladen werden: "+error.message,true);return}
+ const ids=(students||[]).map(s=>s.id);
+ let progress=[],answers=[];
+ if(ids.length){
+  const [p,a]=await Promise.all([
+   supabase.from("sm_progress").select("student_id,current_level").in("student_id",ids),
+   supabase.from("sm_answers").select("student_id,correct").in("student_id",ids).limit(10000)
+  ]);
+  if(p.error||a.error){message("dashboardMessage","Statistiken konnten nicht vollständig geladen werden: "+(p.error?.message||a.error?.message),true);return}
+  progress=p.data||[];answers=a.data||[];
+ }
+ $("studentCount").textContent=students.length;
+ $("answerCount").textContent=String(answers.length);
+ $("accuracy").textContent=answers.length?(Math.round(100*answers.filter(a=>a.correct).length/answers.length)+" %"):"–";
+ show("empty",students.length===0);
+ for(const s of students){
+  const tr=document.createElement("tr"),progressRow=progress.find(p=>p.student_id===s.id),count=answers.filter(a=>a.student_id===s.id).length;
+  for(const val of [s.nickname,progressRow?.current_level??"1",String(count)]){const td=document.createElement("td");td.textContent=val;tr.append(td)}
+  $("studentRows").append(tr);
+ }
+ if(answers.length===10000)message("dashboardMessage","Hinweis: Für diesen ersten Test werden höchstens 10 000 Antworten geladen. Später ergänzen wir skalierbare serverseitige Auswertungen.");
+}
+$("loginForm").addEventListener("submit",async e=>{
+ e.preventDefault();message("loginMessage","");$("signIn").disabled=true;
+ try{const {data,error}=await supabase.auth.signInWithPassword({email:$("email").value.trim(),password:$("password").value});
+  if(error)throw error;$("password").value="";await enter(data.session);
+ }catch(err){message("loginMessage","Anmeldung fehlgeschlagen: "+err.message,true)}
+ finally{$("signIn").disabled=false}
+});
+$("signOut").addEventListener("click",async()=>{await supabase.auth.signOut();show("dashboard",false);show("login",true);message("loginMessage","Du hast dich abgemeldet.")});
+$("refresh").addEventListener("click",loadData);
+try{const {data,error}=await supabase.auth.getSession();if(error)throw error;await enter(data.session)}
+catch(err){message("loginMessage","Verbindungsfehler: "+err.message,true)}
+</script></body></html>
