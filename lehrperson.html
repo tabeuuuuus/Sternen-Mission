@@ -126,7 +126,12 @@ $("studentForm").addEventListener("submit",async e=>{
   const {data:{session},error:sessionError}=await supabase.auth.getSession();
   if(sessionError||!session)throw Error("Bitte erneut anmelden.");
   const {data,error}=await supabase.functions.invoke("create-student",{body:{nickname:$("nickname").value.trim()}});
-  if(error)throw Error("Die Serverfunktion ist noch nicht eingerichtet oder antwortet nicht.");
+  if(error){
+    let detail=error.message||"Unbekannter Fehler";
+    if(error.context?.status) detail+=" (HTTP "+error.context.status+")";
+    try{const body=await error.context?.json();if(body?.error)detail+=": "+body.error}catch{}
+    throw Error("Kinderprofil konnte nicht erstellt werden: "+detail);
+  }
   if(!data?.code)throw Error(data?.error||"Kein Zugangscode zurückgegeben.");
   $("studentCode").textContent=data.code;show("studentCodeBox",true);
   $("studentForm").reset();await loadData();
