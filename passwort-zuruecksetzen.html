@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sternen-Mission | Passwort zurücksetzen</title>
+<style>
+:root{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#eef5ff;background:#09152d;color-scheme:dark}*{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(ellipse at 20% 15%,#264575 0,transparent 45%),radial-gradient(ellipse at 90% 85%,#28265d 0,transparent 40%),#09152d}
+main{max-width:580px;margin:0 auto;padding:40px 18px}header{display:flex;justify-content:space-between;align-items:center;margin-bottom:28px;gap:12px;font-weight:800;letter-spacing:.03em}
+.panel{background:#111f3dee;border:1px solid #6383b155;border-radius:23px;padding:clamp(24px,5vw,40px);box-shadow:0 18px 60px #02071788}
+h1{font-size:clamp(26px,5vw,35px);margin:0 0 12px}p{color:#becde7;line-height:1.6}label{display:block;font-weight:700;font-size:14px;margin:20px 0 8px}
+input{font:inherit;width:100%;background:#0a1630;color:#fff;border:1px solid #7291bc88;border-radius:12px;padding:14px}
+input:focus{outline:2px solid #75d8fb}button,.link{cursor:pointer;display:inline-block;font:inherit;font-weight:800;text-decoration:none;border:0;border-radius:12px;padding:13px 17px;background:linear-gradient(120deg,#65d9f5,#a09bff);color:#09152d}button:disabled{opacity:.6}.link{background:#243859;color:#dcecff;border:1px solid #7291bc55}
+.actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:24px}
+.notice{margin-top:18px;padding:13px;border-radius:11px;background:#23395b;border:1px solid #7392bc77;line-height:1.5}.error{background:#5f2937;border-color:#df7d8c}.hidden{display:none!important}
+small{color:#a9c0e0}footer{margin-top:30px;color:#a7bbd9;font-size:13px}
+</style></head><body><main>
+<header><span>✦ STERNEN-MISSION</span><a class="link" href="./lehrperson.html">Zur Anmeldung</a></header>
+<section class="panel">
+<div id="request"><h1>Passwort vergessen?</h1><p>Gib die E-Mail-Adresse deines Lehrpersonenkontos ein. Falls ein Konto existiert, erhältst du einen Link zum Zurücksetzen.</p>
+<form id="requestForm"><label for="email">E-Mail-Adresse</label><input id="email" type="email" autocomplete="email" required><div class="actions"><button id="send" type="submit">Link anfordern</button></div></form></div>
+<div id="change" class="hidden"><h1>Neues Passwort festlegen</h1><p>Gib dein neues Passwort zweimal ein. Der Wiederherstellungslink ist nur für kurze Zeit gültig.</p>
+<form id="changeForm"><label for="password">Neues Passwort</label><input id="password" type="password" autocomplete="new-password" minlength="12" required>
+<label for="confirm">Passwort wiederholen</label><input id="confirm" type="password" autocomplete="new-password" minlength="12" required><div class="actions"><button id="save" type="submit">Passwort speichern</button></div></form></div>
+<div id="message" class="notice hidden" role="status"></div>
+</section><footer>Testsystem. Gib dein Passwort niemals in ChatGPT oder an andere Personen weiter.</footer>
+</main><script type="module">
+import {createClient} from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
+const sb=createClient("https://usejitkmxcjpfusmloil.supabase.co","sb_publishable_kjXScgpazASX508ovdW5KQ_mQ5Rjgb7",{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
+const $=id=>document.getElementById(id);
+const redirectUrl="https://tabeuuuuus.github.io/Sternen-Mission/passwort-zuruecksetzen.html";
+function msg(t,error=false){$("message").textContent=t;$("message").classList.toggle("error",error);$("message").classList.toggle("hidden",!t)}
+function changeView(){ $("request").classList.add("hidden");$("change").classList.remove("hidden");msg("") }
+let recoveryReady=false;
+sb.auth.onAuthStateChange((event,session)=>{
+ if(event==="PASSWORD_RECOVERY"&&session){recoveryReady=true;changeView()}
+});
+$("requestForm").addEventListener("submit",async e=>{
+ e.preventDefault();$("send").disabled=true;msg("");
+ try{const {error}=await sb.auth.resetPasswordForEmail($("email").value.trim(),{redirectTo:redirectUrl});
+ if(error)throw error;msg("Falls diese E-Mail-Adresse registriert ist, wurde ein Wiederherstellungslink versendet. Bitte auch den Spamordner prüfen.");
+ }catch(err){msg("Der Link konnte nicht angefordert werden: "+err.message,true)}
+ finally{$("send").disabled=false}
+});
+$("changeForm").addEventListener("submit",async e=>{
+ e.preventDefault();msg("");
+ if(!recoveryReady){msg("Bitte öffne zuerst den gültigen Link aus der Wiederherstellungs-E-Mail.",true);return}
+ if($("password").value!==$("confirm").value){msg("Die Passwörter stimmen nicht überein.",true);return}
+ $("save").disabled=true;
+ try{const {error}=await sb.auth.updateUser({password:$("password").value});
+ if(error)throw error;recoveryReady=false;$("changeForm").reset();await sb.auth.signOut();msg("Das Passwort wurde geändert. Du kannst dich jetzt im Lehrpersonenbereich anmelden.");
+ $("change").classList.add("hidden");$("request").classList.remove("hidden");
+ }catch(err){msg("Passwort konnte nicht geändert werden: "+err.message,true)}
+ finally{$("save").disabled=false}
+});
+const params=new URLSearchParams(location.search);
+if(params.get("error")||params.get("error_description"))msg("Der Wiederherstellungslink ist ungültig oder abgelaufen. Fordere bitte einen neuen Link an.",true);
+</script></body></html>
