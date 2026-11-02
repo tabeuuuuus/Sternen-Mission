@@ -31,6 +31,11 @@ a{color:#96e0f8}footer{margin-top:30px;font-size:13px;color:#a7bbd9}
 <div id="loginMessage" class="notice hidden" role="status"></div></section>
 <section id="dashboard" class="panel hidden"><div class="muted">DEIN DASHBOARD</div><h1>Missionen im Überblick</h1><p id="signedInAs"></p>
 <div class="summary"><div class="metric">Schülerprofile<strong id="studentCount">–</strong></div><div class="metric">Erfasste Antworten<strong id="answerCount">–</strong></div><div class="metric">Ø Trefferquote<strong id="accuracy">–</strong></div></div>
+<h2>Test-Schülerprofil anlegen</h2><p class="muted">Nur erfundene Namen verwenden. Die Funktion benötigt zuerst die Veröffentlichung von <code>create-student</code> in Supabase.</p>
+<form id="studentForm"><label for="nickname">Profilname (Pseudonym)</label><input id="nickname" maxlength="40" required placeholder="z. B. Test-Astronaut 1">
+<div class="actions"><button id="createStudent" type="submit">Testprofil und Code erstellen</button></div></form>
+<div id="studentMessage" class="notice hidden" role="status"></div>
+<div id="studentCodeBox" class="notice hidden"><strong>Einmaliger Zugangscode</strong><p class="muted">Diesen Code sicher aufbewahren. Er wird später nicht erneut angezeigt.</p><code id="studentCode" style="overflow-wrap:anywhere;user-select:all"></code><div class="actions"><button type="button" class="secondary" id="copyStudentCode">Code kopieren</button></div></div>
 <h2>Deine Schülerprofile</h2><div style="overflow-x:auto"><table><thead><tr><th>Profil</th><th>Aktuelles Level</th><th>Rechnungen</th></tr></thead><tbody id="studentRows"></tbody></table></div>
 <p id="empty" class="muted hidden">Noch keine Schülerprofile vorhanden. Wir richten die persönlichen Kinder-Codes im nächsten Schritt ein.</p>
 <div id="studentSelectWrap" class="hidden"><label for="studentSelect">Lernanalyse auswählen</label><select id="studentSelect" style="width:100%;padding:12px;border-radius:12px;background:#0a1630;color:white;border:1px solid #6884b477"></select></div>
@@ -113,6 +118,23 @@ async function loadData(){
 $("studentSelect").addEventListener("change",()=>{
  $("studentSelect").dataset.selected=$("studentSelect").value;
  renderStudent($("studentSelect").value);
+});
+$("studentForm").addEventListener("submit",async e=>{
+ e.preventDefault();message("studentMessage","");show("studentCodeBox",false);
+ $("createStudent").disabled=true;
+ try{
+  const {data:{session},error:sessionError}=await supabase.auth.getSession();
+  if(sessionError||!session)throw Error("Bitte erneut anmelden.");
+  const {data,error}=await supabase.functions.invoke("create-student",{body:{nickname:$("nickname").value.trim()}});
+  if(error)throw Error("Die Serverfunktion ist noch nicht eingerichtet oder antwortet nicht.");
+  if(!data?.code)throw Error(data?.error||"Kein Zugangscode zurückgegeben.");
+  $("studentCode").textContent=data.code;show("studentCodeBox",true);
+  $("studentForm").reset();await loadData();
+ }catch(err){message("studentMessage",err.message,true)}
+ finally{$("createStudent").disabled=false}
+});
+$("copyStudentCode").addEventListener("click",async()=>{
+ try{await navigator.clipboard.writeText($("studentCode").textContent);message("studentMessage","Code kopiert. Sicher aufbewahren.")}catch{message("studentMessage","Code bitte manuell markieren und kopieren.",true)}
 });
 $("loginForm").addEventListener("submit",async e=>{
  e.preventDefault();message("loginMessage","");$("signIn").disabled=true;
