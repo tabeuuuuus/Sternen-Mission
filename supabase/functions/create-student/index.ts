@@ -1,11 +1,11 @@
 // Supabase Edge Function: create-student
-// Deploy with JWT verification enabled. SUPABASE_SERVICE_ROLE_KEY stays server-side.
+// Deploy with legacy JWT verification disabled; function verifies the user token itself. SUPABASE_SERVICE_ROLE_KEY stays server-side.
 import { createClient } from "npm:@supabase/supabase-js@2";
 const PROJECT_URL = Deno.env.get("SUPABASE_URL")!;
 const PUBLIC_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const ORIGIN = "https://tabeuuuuus.github.io";
-const headers = {"Access-Control-Allow-Origin":ORIGIN,"Access-Control-Allow-Headers":"authorization, apikey, content-type","Access-Control-Allow-Methods":"POST, OPTIONS","Content-Type":"application/json","Vary":"Origin"};
+const headers = {"Access-Control-Allow-Origin":ORIGIN,"Access-Control-Allow-Headers":"authorization, apikey, content-type, x-client-info, x-supabase-api-version","Access-Control-Allow-Methods":"POST, OPTIONS","Content-Type":"application/json","Vary":"Origin"};
 const json=(body:unknown,status=200)=>new Response(JSON.stringify(body),{status,headers});
 const alphabet="ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 function randomChars(n:number){const bytes=crypto.getRandomValues(new Uint8Array(n));return Array.from(bytes,b=>alphabet[b%alphabet.length]).join("")}
